@@ -8,3 +8,20 @@ import os
 import numpy as np
 import tensorflow as tf # This code has been tested with TensorFlow 1.6
 from sklearn.preprocessing import MinMaxScaler
+import sys
+import subprocess
+from pathlib import Path
+
+def install():
+    req = Path("requirements.txt")
+    if not req.exists():
+        print("No requirements.txt found")
+        return
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", str(req)])
+
+def main():
+    #install()
+    print("Hello")
+
+if __name__ == "__main__":
+    main()
