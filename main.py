@@ -12,6 +12,9 @@ import sys
 import subprocess
 from pathlib import Path
 
+#local import
+from dataacquisition import dataacquisition
+
 def install():
     req = Path("requirements.txt")
     if not req.exists():
@@ -21,7 +24,7 @@ def install():
 
 def main():
     #install()
-    print("Hello")
+    dataacquisition("kaggle")
 
 if __name__ == "__main__":
     main()
