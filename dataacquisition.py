@@ -53,11 +53,13 @@ def dataacquisition(source = "kaggle", stock = "AAL"):
                     df.index = df.index + 1
             print('Data saved to : %s'%file_to_save)        
             df.to_csv(file_to_save)
+            return df
 
         # If the data is already there, just load it from the CSV
         else:
             print('File already exists. Loading data from CSV')
             df = pd.read_csv(file_to_save)
+            return df
 
     else:
 
@@ -66,3 +68,5 @@ def dataacquisition(source = "kaggle", stock = "AAL"):
         # But while doing so, be careful to have a large enough dataset and also pay attention to the data normalization
         df = pd.read_csv(os.path.join('Stocks','hpq.us.txt'),delimiter=',',usecols=['Date','Open','High','Low','Close'])
         print('Loaded data from the Kaggle repository')
+        return df
+        

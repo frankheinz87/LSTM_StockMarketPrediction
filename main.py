@@ -14,6 +14,7 @@ from pathlib import Path
 
 #local import
 from dataacquisition import dataacquisition
+from dataexploration import dataexploration
 
 def install():
     req = Path("requirements.txt")
@@ -24,7 +25,9 @@ def install():
 
 def main():
     #install()
-    dataacquisition("kaggle")
+    data = dataacquisition("kaggle")
+    dataexploration(data)
+
 
 if __name__ == "__main__":
     main()

@@ -8,4 +8,4 @@ Following that i will imlement a simple feature to evaluate the accuracy of the 
 
 How to use:
 - activate venv: source .venv/bin/activate
-- tbc
+- sudo apt-get install python3-tk
