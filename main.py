@@ -25,8 +25,9 @@ def install():
 
 def main():
     #install()
-    data = dataacquisition("kaggle")
-    dataexploration(data)
+    #data = dataacquisition("kaggle", "Stocks", "hpq.us.txt")
+    data = dataacquisition(sys.argv[1], sys.argv[2], sys.argv[3])
+    dataexploration(data, sys.argv[3])
 
 
 if __name__ == "__main__":

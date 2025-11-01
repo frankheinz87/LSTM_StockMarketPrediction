@@ -17,10 +17,13 @@ from constants import API_KEY
 
 #data_source = 'kaggle' # alphavantage or kaggle
 
-def dataacquisition(source = "kaggle", stock = "AAL"):
+def dataacquisition(source = "kaggle", type = "Stocks", stock = "hpq.us.txt"):
 
     if source != 'alphavantage' and source != 'kaggle':
         raise ValueError("unknown source tag")
+    
+    if type != 'Stocks' and source != 'ETFs':
+        raise ValueError("unknown type tag")
 
     if source == 'alphavantage':
         # ====================== Loading Data from Alpha Vantage ==================================
@@ -66,7 +69,7 @@ def dataacquisition(source = "kaggle", stock = "AAL"):
         # ====================== Loading Data from Kaggle ==================================
         # You will be using HP's data. Feel free to experiment with other data.
         # But while doing so, be careful to have a large enough dataset and also pay attention to the data normalization
-        df = pd.read_csv(os.path.join('Stocks','hpq.us.txt'),delimiter=',',usecols=['Date','Open','High','Low','Close'])
+        df = pd.read_csv(os.path.join(type, stock),delimiter=',',usecols=['Date','Open','High','Low','Close'])
         print('Loaded data from the Kaggle repository')
         return df
         
