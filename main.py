@@ -15,6 +15,7 @@ from pathlib import Path
 #local import
 from dataacquisition import dataacquisition
 from dataexploration import dataexploration
+from dataprep import dataprep
 
 def install():
     req = Path("requirements.txt")
@@ -27,7 +28,11 @@ def main():
     #install()
     #data = dataacquisition("kaggle", "Stocks", "hpq.us.txt")
     data = dataacquisition(sys.argv[1], sys.argv[2], sys.argv[3])
-    dataexploration(data, sys.argv[3])
+    #dataexploration(data, sys.argv[3])
+    train_data, test_data, mid_data = dataprep(data)
+    print(train_data)
+    print(test_data)
+    print(mid_data)
 
 
 if __name__ == "__main__":
