@@ -17,6 +17,7 @@ from dataacquisition import dataacquisition
 from dataexploration import dataexploration
 from dataprep import dataprep
 from prediction import sa_prediction, ema_prediction
+from LSTMmodel import DataGeneratorSeq, LSTM
 
 def install():
     req = Path("requirements.txt")
@@ -31,11 +32,13 @@ def main():
     data = dataacquisition(sys.argv[1], sys.argv[2], sys.argv[3])
     #dataexploration(data, sys.argv[3])
     train_data, test_data, mid_data = dataprep(data)
-    print(train_data)
-    print(test_data)
-    print(mid_data)
-    sa_prediction(data, train_data, mid_data)
-    ema_prediction(data, train_data, mid_data)
+    #print(train_data)
+    #print(test_data)
+    #print(mid_data)
+    #sa_prediction(data, train_data, mid_data)
+    #ema_prediction(data, train_data, mid_data)
+    
+    LSTM(train_data, test_data, mid_data)
 
 
 if __name__ == "__main__":
