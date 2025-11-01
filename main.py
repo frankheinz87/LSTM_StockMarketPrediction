@@ -16,6 +16,7 @@ from pathlib import Path
 from dataacquisition import dataacquisition
 from dataexploration import dataexploration
 from dataprep import dataprep
+from prediction import sa_prediction, ema_prediction
 
 def install():
     req = Path("requirements.txt")
@@ -33,6 +34,8 @@ def main():
     print(train_data)
     print(test_data)
     print(mid_data)
+    sa_prediction(data, train_data, mid_data)
+    ema_prediction(data, train_data, mid_data)
 
 
 if __name__ == "__main__":
