@@ -58,7 +58,6 @@ class DataGeneratorSeq(object):
             self._cursor[b] = np.random.randint(0,min((b+1)*self._segments,self._prices_length-1))
 
 def LSTM(train_data, test_data, mid_data):
-    # --- Hyperparameters ---
     D = 1
     num_unrollings = 50
     batch_size = 500
@@ -66,80 +65,56 @@ def LSTM(train_data, test_data, mid_data):
     dropout = 0.2
     epochs = 30
     n_predict_once = 50
-    test_points_seq = np.arange(11000, 12000, 50).tolist()
 
-    # --- Data preparation ---
-    print("Preparing training batches...")
+    # Points where we start predictions
+    test_points_seq = np.arange(len(train_data), len(mid_data) - n_predict_once, 50).tolist()
+
+    # --- Prepare training batches ---
     dg = DataGeneratorSeq(train_data, batch_size, num_unrollings)
     u_data, u_labels = dg.unroll_batches()
-
-    # Convert unrolled batches to NumPy arrays suitable for Keras
     X = np.stack(u_data, axis=1).reshape(batch_size, num_unrollings, D)
     y = np.stack(u_labels, axis=1)[:, -1].reshape(batch_size, 1)
 
-    # --- Build LSTM model ---
+    # --- Build model ---
     model = tf.keras.Sequential([
         layers.LSTM(num_nodes[0], return_sequences=True, input_shape=(num_unrollings, D), dropout=dropout),
         layers.LSTM(num_nodes[1], return_sequences=True, dropout=dropout),
         layers.LSTM(num_nodes[2], dropout=dropout),
         layers.Dense(1)
     ])
-
     model.compile(optimizer='adam', loss='mse')
-    model.summary()
+    model.fit(X, y, epochs=epochs, batch_size=batch_size, shuffle=True, verbose=1)
 
-    # --- Create validation (test) dataset ---
-    print("\nPreparing validation data...")
-    def create_sequences(series, num_unrollings):
-        X_seq, y_seq = [], []
-        for i in range(len(series) - num_unrollings):
-            X_seq.append(series[i:i+num_unrollings])
-            y_seq.append(series[i+num_unrollings])
-        return np.array(X_seq).reshape(-1, num_unrollings, 1), np.array(y_seq).reshape(-1, 1)
-
-    X_test, y_test = create_sequences(test_data, num_unrollings)
-
-    # --- Train the model (with green progress bar) ---
-    print("\nStarting training...")
-    history = model.fit(
-        X, y,
-        validation_data=(X_test, y_test),
-        epochs=epochs,
-        batch_size=batch_size,
-        shuffle=True,
-        verbose=1
-    )
-
-    # --- Evaluate on test data ---
-    print("\nEvaluating model performance on test data...")
-    test_loss = model.evaluate(X_test, y_test, verbose=0)
-    print(f"\nFinal Test MSE: {test_loss:.6f}")
-
-    # --- Make predictions over test points ---
-    print("\nGenerating multi-step predictions for visualization...")
+    # --- Make rolling predictions ---
     predictions_over_time = []
+    predictions_start_idx = []
 
     for w_i in test_points_seq:
-        if w_i < num_unrollings or w_i >= len(mid_data):
-            continue  # skip invalid indices
-
         input_seq = mid_data[w_i - num_unrollings:w_i].reshape(1, num_unrollings, D)
         preds = []
-        current_input = input_seq
-
+        current_input = input_seq.copy()
         for _ in range(n_predict_once):
             pred = model.predict(current_input, verbose=0)
             preds.append(pred[0, 0])
-            # shift window
             current_input = np.roll(current_input, -1)
             current_input[0, -1, 0] = pred
-
         predictions_over_time.append(np.array(preds))
+        predictions_start_idx.append(w_i)  # track start index
 
-    print("\nFinished all predictions successfully ✅")
-    print(f"Generated {len(predictions_over_time)} prediction sequences.")
+    return predictions_over_time, predictions_start_idx
 
-    return predictions_over_time, history, test_loss
+def plot_predictions(predictions_over_time, predictions_start_idx, mid_data):
+    plt.figure(figsize=(14,6))
+    plt.plot(mid_data, color='b', label='True data')
+
+    for start_idx, preds in zip(predictions_start_idx, predictions_over_time):
+        plt.plot(range(start_idx, start_idx + len(preds)), preds, color='r', alpha=0.5)
+
+    plt.title('LSTM Stock Price Predictions')
+    plt.xlabel('Time')
+    plt.ylabel('Price')
+    plt.legend()
+    plt.show()
 
 
 

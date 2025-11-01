@@ -17,7 +17,7 @@ from dataacquisition import dataacquisition
 from dataexploration import dataexploration
 from dataprep import dataprep
 from prediction import sa_prediction, ema_prediction
-from LSTMmodel import DataGeneratorSeq, LSTM
+from LSTMmodel import LSTM, plot_predictions
 
 def install():
     req = Path("requirements.txt")
@@ -38,7 +38,11 @@ def main():
     #sa_prediction(data, train_data, mid_data)
     #ema_prediction(data, train_data, mid_data)
     
-    LSTM(train_data, test_data, mid_data)
+    preds, start_idx = LSTM(train_data, test_data, mid_data)
+    plot_predictions(preds, start_idx, mid_data)
+    
+
+
 
 
 if __name__ == "__main__":
