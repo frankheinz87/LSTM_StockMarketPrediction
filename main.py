@@ -38,8 +38,8 @@ def main():
     #sa_prediction(data, train_data, mid_data)
     #ema_prediction(data, train_data, mid_data)
     
-    preds, start_idx = LSTM(train_data, test_data, mid_data)
-    plot_predictions(preds, start_idx, mid_data)
+    preds, x_axis_sec, best_epoch = LSTM(train_data, test_data, mid_data)
+    plot_predictions(preds, x_axis_sec, best_epoch, data, mid_data)
     
 
 

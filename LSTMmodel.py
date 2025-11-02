@@ -57,6 +57,7 @@ class DataGeneratorSeq(object):
         for b in range(self._batch_size):
             self._cursor[b] = np.random.randint(0,min((b+1)*self._segments,self._prices_length-1))
 
+
 def LSTM(train_data, test_data, mid_data):
     D = 1
     num_unrollings = 50
@@ -66,14 +67,20 @@ def LSTM(train_data, test_data, mid_data):
     epochs = 30
     n_predict_once = 50
 
-    # Points where we start predictions
+    # Points where we start predictions (after training range)
     test_points_seq = np.arange(len(train_data), len(mid_data) - n_predict_once, 50).tolist()
 
     # --- Prepare training batches ---
     dg = DataGeneratorSeq(train_data, batch_size, num_unrollings)
     u_data, u_labels = dg.unroll_batches()
-    X = np.stack(u_data, axis=1).reshape(batch_size, num_unrollings, D)
-    y = np.stack(u_labels, axis=1)[:, -1].reshape(batch_size, 1)
+    X_train = np.stack(u_data, axis=1).reshape(batch_size, num_unrollings, D)
+    y_train = np.stack(u_labels, axis=1)[:, -1].reshape(batch_size, 1)
+
+    # --- Validation (test) batches ---
+    dg_test = DataGeneratorSeq(test_data, batch_size, num_unrollings)
+    u_data_t, u_labels_t = dg_test.unroll_batches()
+    X_val = np.stack(u_data_t, axis=1).reshape(batch_size, num_unrollings, D)
+    y_val = np.stack(u_labels_t, axis=1)[:, -1].reshape(batch_size, 1)
 
     # --- Build model ---
     model = tf.keras.Sequential([
@@ -83,38 +90,79 @@ def LSTM(train_data, test_data, mid_data):
         layers.Dense(1)
     ])
     model.compile(optimizer='adam', loss='mse')
-    model.fit(X, y, epochs=epochs, batch_size=batch_size, shuffle=True, verbose=1)
 
-    # --- Make rolling predictions ---
+    # --- Train with validation ---
+    history = model.fit(
+        X_train, y_train,
+        validation_data=(X_val, y_val),
+        epochs=epochs,
+        batch_size=batch_size,
+        shuffle=True,
+        verbose=1
+    )
+
+    # Track the best epoch by validation loss
+    best_epoch = int(np.argmin(history.history['val_loss']))
+    print(f"\nBest epoch (lowest validation loss): {best_epoch}")
+
+    # --- Make rolling predictions over time ---
     predictions_over_time = []
-    predictions_start_idx = []
+    x_axis_seq = []
 
     for w_i in test_points_seq:
         input_seq = mid_data[w_i - num_unrollings:w_i].reshape(1, num_unrollings, D)
         preds = []
         current_input = input_seq.copy()
-        for _ in range(n_predict_once):
+        x_axis = []
+
+        for pred_i in range(n_predict_once):
             pred = model.predict(current_input, verbose=0)
             preds.append(pred[0, 0])
             current_input = np.roll(current_input, -1)
             current_input[0, -1, 0] = pred
+            x_axis.append(w_i + pred_i)
+
         predictions_over_time.append(np.array(preds))
-        predictions_start_idx.append(w_i)  # track start index
+        x_axis_seq.append(x_axis)
 
-    return predictions_over_time, predictions_start_idx
+    return predictions_over_time, x_axis_seq, best_epoch
 
-def plot_predictions(predictions_over_time, predictions_start_idx, mid_data):
-    plt.figure(figsize=(14,6))
-    plt.plot(mid_data, color='b', label='True data')
 
-    for start_idx, preds in zip(predictions_start_idx, predictions_over_time):
-        plt.plot(range(start_idx, start_idx + len(preds)), preds, color='r', alpha=0.5)
+def plot_predictions(predictions_over_time, x_axis_seq, best_prediction_epoch, df, all_mid_data):
+    plt.figure(figsize=(18, 18))
 
-    plt.title('LSTM Stock Price Predictions')
-    plt.xlabel('Time')
-    plt.ylabel('Price')
-    plt.legend()
+    # --- Plot 1: Evolution of predictions over time ---
+    plt.subplot(2, 1, 1)
+    plt.plot(range(df.shape[0]), all_mid_data, color='b')
+
+    start_alpha = 0.25
+    alpha = np.arange(start_alpha, 1.1, (1.0 - start_alpha) / len(predictions_over_time[::3]))
+
+    # Each p (predictions) corresponds to one x_axis (timestamps)
+    for p_i, (x_axis, preds) in enumerate(zip(x_axis_seq[::3], predictions_over_time[::3])):
+        plt.plot(x_axis, preds, color='r', alpha=alpha[p_i])
+
+    plt.title('Evolution of Test Predictions Over Time', fontsize=18)
+    plt.xlabel('Date', fontsize=18)
+    plt.ylabel('Mid Price', fontsize=18)
+    plt.xlim(len(df) - 1500, len(df))
+
+    # --- Plot 2: Best epoch predictions ---
+    plt.subplot(2, 1, 2)
+    plt.plot(range(df.shape[0]), all_mid_data, color='b')
+
+    x_axis_best = x_axis_seq[best_prediction_epoch]
+    preds_best = predictions_over_time[best_prediction_epoch]
+    plt.plot(x_axis_best, preds_best, color='r')
+
+    plt.title('Best Test Predictions Over Time', fontsize=18)
+    plt.xlabel('Date', fontsize=18)
+    plt.ylabel('Mid Price', fontsize=18)
+    plt.xlim(len(df) - 1500, len(df))
+
     plt.show()
+
+
 
 
 
