@@ -4,3 +4,5 @@ constants.py
 Stocks/
 ETFs/
 *.csv
+*.png
+saved_preds/
